@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Để dùng tính năng Copy
-import 'package:qr_flutter/qr_flutter.dart';
+
 import 'package:emv_qr_builder/emv_qr_builder.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class MyQrPage extends StatefulWidget {
   const MyQrPage({super.key});

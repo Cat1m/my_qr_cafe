@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // 1. Import thư viện bloc
+import 'package:my_qr_cafe/features/custom_qr/repository/bank_repository.dart';
+
 import 'features/my_qr/pages/my_qr_page.dart';
-import 'features/custom_qr/pages/custom_qr_page.dart';
+import 'features/custom_qr/presentation/custom_qr_page.dart';
 
 void main() {
   runApp(const MyQrCafeApp());
@@ -11,14 +14,18 @@ class MyQrCafeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'My QR Cafe',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
-        useMaterial3: true,
+    // 3. Bọc MaterialApp bằng RepositoryProvider
+    return RepositoryProvider(
+      create: (context) => BankRepository(),
+      child: MaterialApp(
+        title: 'My QR Cafe',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.brown),
+          useMaterial3: true,
+        ),
+        home: const MainContainer(),
       ),
-      home: const MainContainer(),
     );
   }
 }
