@@ -237,7 +237,7 @@ class _MyQrPageState extends State<MyQrPage> {
                               version: QrVersions.auto,
                               size: 200.0,
                               backgroundColor: Colors.white,
-                              errorCorrectionLevel: QrErrorCorrectLevel.H,
+                              errorCorrectionLevel: QrErrorCorrectLevel.M,
                               gapless: false,
                               eyeStyle: QrEyeStyle(
                                 eyeShape: QrEyeShape.square,
