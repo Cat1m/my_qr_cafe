@@ -9,3 +9,7 @@ npm install -g vercel
 cd build/web
 
 vercel
+
+//chạy với wasm
+
+flutter run -d chrome --wasm

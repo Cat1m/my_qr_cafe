@@ -14,10 +14,10 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$QrInputModel {
 
- Bank? get selectedBank; String get accountNumber; String get merchantName; double get amount; String get description;// Đây là chuỗi final sau khi đã ghép
- QrType get type;// Thêm 2 trường bắt buộc cho Business
- String get mcc;// 5999: General Merchant (Mặc định an toàn)
- String get merchantCity; Uint8List? get logoBytes;
+ Bank? get selectedBank; String get accountNumber; String get merchantName; double get amount; String get description; QrType get type; String get mcc; String get merchantCity; Uint8List? get logoBytes;// Màu sắc
+ Color get dataColor; Color get eyeColor; Color get bgColor;// [MỚI] Hình dáng QR (Style)
+ QrDataModuleShape get qrDataShape;// Chấm dữ liệu
+ QrEyeShape get qrEyeShape;
 /// Create a copy of QrInputModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $QrInputModelCopyWith<QrInputModel> get copyWith => _$QrInputModelCopyWithImpl<Q
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QrInputModel&&(identical(other.selectedBank, selectedBank) || other.selectedBank == selectedBank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.mcc, mcc) || other.mcc == mcc)&&(identical(other.merchantCity, merchantCity) || other.merchantCity == merchantCity)&&const DeepCollectionEquality().equals(other.logoBytes, logoBytes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QrInputModel&&(identical(other.selectedBank, selectedBank) || other.selectedBank == selectedBank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.mcc, mcc) || other.mcc == mcc)&&(identical(other.merchantCity, merchantCity) || other.merchantCity == merchantCity)&&const DeepCollectionEquality().equals(other.logoBytes, logoBytes)&&(identical(other.dataColor, dataColor) || other.dataColor == dataColor)&&(identical(other.eyeColor, eyeColor) || other.eyeColor == eyeColor)&&(identical(other.bgColor, bgColor) || other.bgColor == bgColor)&&(identical(other.qrDataShape, qrDataShape) || other.qrDataShape == qrDataShape)&&(identical(other.qrEyeShape, qrEyeShape) || other.qrEyeShape == qrEyeShape));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,selectedBank,accountNumber,merchantName,amount,description,type,mcc,merchantCity,const DeepCollectionEquality().hash(logoBytes));
+int get hashCode => Object.hash(runtimeType,selectedBank,accountNumber,merchantName,amount,description,type,mcc,merchantCity,const DeepCollectionEquality().hash(logoBytes),dataColor,eyeColor,bgColor,qrDataShape,qrEyeShape);
 
 @override
 String toString() {
-  return 'QrInputModel(selectedBank: $selectedBank, accountNumber: $accountNumber, merchantName: $merchantName, amount: $amount, description: $description, type: $type, mcc: $mcc, merchantCity: $merchantCity, logoBytes: $logoBytes)';
+  return 'QrInputModel(selectedBank: $selectedBank, accountNumber: $accountNumber, merchantName: $merchantName, amount: $amount, description: $description, type: $type, mcc: $mcc, merchantCity: $merchantCity, logoBytes: $logoBytes, dataColor: $dataColor, eyeColor: $eyeColor, bgColor: $bgColor, qrDataShape: $qrDataShape, qrEyeShape: $qrEyeShape)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $QrInputModelCopyWith<$Res>  {
   factory $QrInputModelCopyWith(QrInputModel value, $Res Function(QrInputModel) _then) = _$QrInputModelCopyWithImpl;
 @useResult
 $Res call({
- Bank? selectedBank, String accountNumber, String merchantName, double amount, String description, QrType type, String mcc, String merchantCity, Uint8List? logoBytes
+ Bank? selectedBank, String accountNumber, String merchantName, double amount, String description, QrType type, String mcc, String merchantCity, Uint8List? logoBytes, Color dataColor, Color eyeColor, Color bgColor, QrDataModuleShape qrDataShape, QrEyeShape qrEyeShape
 });
 
 
@@ -65,7 +65,7 @@ class _$QrInputModelCopyWithImpl<$Res>
 
 /// Create a copy of QrInputModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? selectedBank = freezed,Object? accountNumber = null,Object? merchantName = null,Object? amount = null,Object? description = null,Object? type = null,Object? mcc = null,Object? merchantCity = null,Object? logoBytes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? selectedBank = freezed,Object? accountNumber = null,Object? merchantName = null,Object? amount = null,Object? description = null,Object? type = null,Object? mcc = null,Object? merchantCity = null,Object? logoBytes = freezed,Object? dataColor = null,Object? eyeColor = null,Object? bgColor = null,Object? qrDataShape = null,Object? qrEyeShape = null,}) {
   return _then(_self.copyWith(
 selectedBank: freezed == selectedBank ? _self.selectedBank : selectedBank // ignore: cast_nullable_to_non_nullable
 as Bank?,accountNumber: null == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
@@ -76,7 +76,12 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as QrType,mcc: null == mcc ? _self.mcc : mcc // ignore: cast_nullable_to_non_nullable
 as String,merchantCity: null == merchantCity ? _self.merchantCity : merchantCity // ignore: cast_nullable_to_non_nullable
 as String,logoBytes: freezed == logoBytes ? _self.logoBytes : logoBytes // ignore: cast_nullable_to_non_nullable
-as Uint8List?,
+as Uint8List?,dataColor: null == dataColor ? _self.dataColor : dataColor // ignore: cast_nullable_to_non_nullable
+as Color,eyeColor: null == eyeColor ? _self.eyeColor : eyeColor // ignore: cast_nullable_to_non_nullable
+as Color,bgColor: null == bgColor ? _self.bgColor : bgColor // ignore: cast_nullable_to_non_nullable
+as Color,qrDataShape: null == qrDataShape ? _self.qrDataShape : qrDataShape // ignore: cast_nullable_to_non_nullable
+as QrDataModuleShape,qrEyeShape: null == qrEyeShape ? _self.qrEyeShape : qrEyeShape // ignore: cast_nullable_to_non_nullable
+as QrEyeShape,
   ));
 }
 
@@ -161,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes,  Color dataColor,  Color eyeColor,  Color bgColor,  QrDataModuleShape qrDataShape,  QrEyeShape qrEyeShape)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QrInputModel() when $default != null:
-return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes);case _:
+return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes,_that.dataColor,_that.eyeColor,_that.bgColor,_that.qrDataShape,_that.qrEyeShape);case _:
   return orElse();
 
 }
@@ -182,10 +187,10 @@ return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes,  Color dataColor,  Color eyeColor,  Color bgColor,  QrDataModuleShape qrDataShape,  QrEyeShape qrEyeShape)  $default,) {final _that = this;
 switch (_that) {
 case _QrInputModel():
-return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes);case _:
+return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes,_that.dataColor,_that.eyeColor,_that.bgColor,_that.qrDataShape,_that.qrEyeShape);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +207,10 @@ return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Bank? selectedBank,  String accountNumber,  String merchantName,  double amount,  String description,  QrType type,  String mcc,  String merchantCity,  Uint8List? logoBytes,  Color dataColor,  Color eyeColor,  Color bgColor,  QrDataModuleShape qrDataShape,  QrEyeShape qrEyeShape)?  $default,) {final _that = this;
 switch (_that) {
 case _QrInputModel() when $default != null:
-return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes);case _:
+return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.amount,_that.description,_that.type,_that.mcc,_that.merchantCity,_that.logoBytes,_that.dataColor,_that.eyeColor,_that.bgColor,_that.qrDataShape,_that.qrEyeShape);case _:
   return null;
 
 }
@@ -217,7 +222,7 @@ return $default(_that.selectedBank,_that.accountNumber,_that.merchantName,_that.
 
 
 class _QrInputModel implements QrInputModel {
-  const _QrInputModel({this.selectedBank, this.accountNumber = '', this.merchantName = '', this.amount = 0, this.description = '', this.type = QrType.personal, this.mcc = '5999', this.merchantCity = 'Vietnam', this.logoBytes});
+  const _QrInputModel({this.selectedBank, this.accountNumber = '', this.merchantName = '', this.amount = 0, this.description = '', this.type = QrType.personal, this.mcc = '5999', this.merchantCity = 'Vietnam', this.logoBytes, this.dataColor = Colors.black, this.eyeColor = Colors.black, this.bgColor = Colors.white, this.qrDataShape = QrDataModuleShape.circle, this.qrEyeShape = QrEyeShape.square});
   
 
 @override final  Bank? selectedBank;
@@ -225,13 +230,18 @@ class _QrInputModel implements QrInputModel {
 @override@JsonKey() final  String merchantName;
 @override@JsonKey() final  double amount;
 @override@JsonKey() final  String description;
-// Đây là chuỗi final sau khi đã ghép
 @override@JsonKey() final  QrType type;
-// Thêm 2 trường bắt buộc cho Business
 @override@JsonKey() final  String mcc;
-// 5999: General Merchant (Mặc định an toàn)
 @override@JsonKey() final  String merchantCity;
 @override final  Uint8List? logoBytes;
+// Màu sắc
+@override@JsonKey() final  Color dataColor;
+@override@JsonKey() final  Color eyeColor;
+@override@JsonKey() final  Color bgColor;
+// [MỚI] Hình dáng QR (Style)
+@override@JsonKey() final  QrDataModuleShape qrDataShape;
+// Chấm dữ liệu
+@override@JsonKey() final  QrEyeShape qrEyeShape;
 
 /// Create a copy of QrInputModel
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +253,16 @@ _$QrInputModelCopyWith<_QrInputModel> get copyWith => __$QrInputModelCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QrInputModel&&(identical(other.selectedBank, selectedBank) || other.selectedBank == selectedBank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.mcc, mcc) || other.mcc == mcc)&&(identical(other.merchantCity, merchantCity) || other.merchantCity == merchantCity)&&const DeepCollectionEquality().equals(other.logoBytes, logoBytes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QrInputModel&&(identical(other.selectedBank, selectedBank) || other.selectedBank == selectedBank)&&(identical(other.accountNumber, accountNumber) || other.accountNumber == accountNumber)&&(identical(other.merchantName, merchantName) || other.merchantName == merchantName)&&(identical(other.amount, amount) || other.amount == amount)&&(identical(other.description, description) || other.description == description)&&(identical(other.type, type) || other.type == type)&&(identical(other.mcc, mcc) || other.mcc == mcc)&&(identical(other.merchantCity, merchantCity) || other.merchantCity == merchantCity)&&const DeepCollectionEquality().equals(other.logoBytes, logoBytes)&&(identical(other.dataColor, dataColor) || other.dataColor == dataColor)&&(identical(other.eyeColor, eyeColor) || other.eyeColor == eyeColor)&&(identical(other.bgColor, bgColor) || other.bgColor == bgColor)&&(identical(other.qrDataShape, qrDataShape) || other.qrDataShape == qrDataShape)&&(identical(other.qrEyeShape, qrEyeShape) || other.qrEyeShape == qrEyeShape));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,selectedBank,accountNumber,merchantName,amount,description,type,mcc,merchantCity,const DeepCollectionEquality().hash(logoBytes));
+int get hashCode => Object.hash(runtimeType,selectedBank,accountNumber,merchantName,amount,description,type,mcc,merchantCity,const DeepCollectionEquality().hash(logoBytes),dataColor,eyeColor,bgColor,qrDataShape,qrEyeShape);
 
 @override
 String toString() {
-  return 'QrInputModel(selectedBank: $selectedBank, accountNumber: $accountNumber, merchantName: $merchantName, amount: $amount, description: $description, type: $type, mcc: $mcc, merchantCity: $merchantCity, logoBytes: $logoBytes)';
+  return 'QrInputModel(selectedBank: $selectedBank, accountNumber: $accountNumber, merchantName: $merchantName, amount: $amount, description: $description, type: $type, mcc: $mcc, merchantCity: $merchantCity, logoBytes: $logoBytes, dataColor: $dataColor, eyeColor: $eyeColor, bgColor: $bgColor, qrDataShape: $qrDataShape, qrEyeShape: $qrEyeShape)';
 }
 
 
@@ -263,7 +273,7 @@ abstract mixin class _$QrInputModelCopyWith<$Res> implements $QrInputModelCopyWi
   factory _$QrInputModelCopyWith(_QrInputModel value, $Res Function(_QrInputModel) _then) = __$QrInputModelCopyWithImpl;
 @override @useResult
 $Res call({
- Bank? selectedBank, String accountNumber, String merchantName, double amount, String description, QrType type, String mcc, String merchantCity, Uint8List? logoBytes
+ Bank? selectedBank, String accountNumber, String merchantName, double amount, String description, QrType type, String mcc, String merchantCity, Uint8List? logoBytes, Color dataColor, Color eyeColor, Color bgColor, QrDataModuleShape qrDataShape, QrEyeShape qrEyeShape
 });
 
 
@@ -280,7 +290,7 @@ class __$QrInputModelCopyWithImpl<$Res>
 
 /// Create a copy of QrInputModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? selectedBank = freezed,Object? accountNumber = null,Object? merchantName = null,Object? amount = null,Object? description = null,Object? type = null,Object? mcc = null,Object? merchantCity = null,Object? logoBytes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? selectedBank = freezed,Object? accountNumber = null,Object? merchantName = null,Object? amount = null,Object? description = null,Object? type = null,Object? mcc = null,Object? merchantCity = null,Object? logoBytes = freezed,Object? dataColor = null,Object? eyeColor = null,Object? bgColor = null,Object? qrDataShape = null,Object? qrEyeShape = null,}) {
   return _then(_QrInputModel(
 selectedBank: freezed == selectedBank ? _self.selectedBank : selectedBank // ignore: cast_nullable_to_non_nullable
 as Bank?,accountNumber: null == accountNumber ? _self.accountNumber : accountNumber // ignore: cast_nullable_to_non_nullable
@@ -291,7 +301,12 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as QrType,mcc: null == mcc ? _self.mcc : mcc // ignore: cast_nullable_to_non_nullable
 as String,merchantCity: null == merchantCity ? _self.merchantCity : merchantCity // ignore: cast_nullable_to_non_nullable
 as String,logoBytes: freezed == logoBytes ? _self.logoBytes : logoBytes // ignore: cast_nullable_to_non_nullable
-as Uint8List?,
+as Uint8List?,dataColor: null == dataColor ? _self.dataColor : dataColor // ignore: cast_nullable_to_non_nullable
+as Color,eyeColor: null == eyeColor ? _self.eyeColor : eyeColor // ignore: cast_nullable_to_non_nullable
+as Color,bgColor: null == bgColor ? _self.bgColor : bgColor // ignore: cast_nullable_to_non_nullable
+as Color,qrDataShape: null == qrDataShape ? _self.qrDataShape : qrDataShape // ignore: cast_nullable_to_non_nullable
+as QrDataModuleShape,qrEyeShape: null == qrEyeShape ? _self.qrEyeShape : qrEyeShape // ignore: cast_nullable_to_non_nullable
+as QrEyeShape,
   ));
 }
 

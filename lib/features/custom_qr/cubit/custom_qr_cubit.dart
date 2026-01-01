@@ -1,6 +1,7 @@
 // lib/features/custom_qr/logic/custom_qr_cubit.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart'; // Import để dùng Color
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:emv_qr_builder/emv_qr_builder.dart';
@@ -8,6 +9,7 @@ import 'package:my_qr_cafe/core/enums/qr_type.dart';
 import 'package:my_qr_cafe/features/custom_qr/models/bank_model.dart';
 import 'package:my_qr_cafe/features/custom_qr/models/qr_input_model/qr_input_model.dart';
 import 'package:my_qr_cafe/features/custom_qr/repository/bank_repository.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'custom_qr_state.dart';
 
 class CustomQrCubit extends Cubit<CustomQrState> {
@@ -26,7 +28,7 @@ class CustomQrCubit extends Cubit<CustomQrState> {
       emit(
         CustomQrLoaded(
           banks: banks,
-          inputModel: const QrInputModel(),
+          inputModel: const QrInputModel(), // Model đã có màu default
           qrPayload: null,
         ),
       );
@@ -35,7 +37,9 @@ class CustomQrCubit extends Cubit<CustomQrState> {
     }
   }
 
-  // --- 2. UPDATE INPUT ---
+  // --- 2. UPDATE INPUT & COLOR ---
+
+  // Hàm chọn ngân hàng
   void selectBank(Bank bank) {
     final currentState = state;
     if (currentState is CustomQrLoaded) {
@@ -48,6 +52,7 @@ class CustomQrCubit extends Cubit<CustomQrState> {
     }
   }
 
+  // Hàm update text fields
   void updateInput({
     String? accountNumber,
     String? merchantName,
@@ -61,6 +66,7 @@ class CustomQrCubit extends Cubit<CustomQrState> {
       emit(
         currentState.copyWith(
           inputModel: currentState.inputModel.copyWith(
+            // Logic: Nếu giá trị mới (accountNumber) là null -> Giữ nguyên giá trị cũ
             accountNumber:
                 accountNumber ?? currentState.inputModel.accountNumber,
             merchantName: merchantName ?? currentState.inputModel.merchantName,
@@ -69,7 +75,26 @@ class CustomQrCubit extends Cubit<CustomQrState> {
             mcc: mcc ?? currentState.inputModel.mcc,
             merchantCity: merchantCity ?? currentState.inputModel.merchantCity,
           ),
-          qrPayload: null, // Reset QR khi data thay đổi
+          qrPayload: null,
+        ),
+      );
+    }
+  }
+
+  // [MỚI] Hàm update màu sắc
+  void updateColor({Color? dataColor, Color? eyeColor, Color? bgColor}) {
+    final currentState = state;
+    if (currentState is CustomQrLoaded) {
+      emit(
+        currentState.copyWith(
+          inputModel: currentState.inputModel.copyWith(
+            // Nếu dataColor null (không truyền) thì freezed giữ nguyên giá trị cũ
+            // Nếu truyền màu mới thì nó cập nhật
+            dataColor: dataColor ?? currentState.inputModel.dataColor,
+            eyeColor: eyeColor ?? currentState.inputModel.eyeColor,
+            bgColor: bgColor ?? currentState.inputModel.bgColor,
+          ),
+          // Không cần reset qrPayload vì đổi màu chỉ là UI
         ),
       );
     }
@@ -100,14 +125,16 @@ class CustomQrCubit extends Cubit<CustomQrState> {
     if (currentState is CustomQrLoaded) {
       emit(
         currentState.copyWith(
-          inputModel: currentState.inputModel.copyWith(logoBytes: null),
+          inputModel: currentState.inputModel.copyWith(
+            // Trong freezed, truyền null vào field nullable sẽ set nó thành null
+            logoBytes: null,
+          ),
         ),
       );
     }
   }
 
   // --- 4. LOGIC TẠO QR (Generate) ---
-  /// Hàm nhận các field rời rạc từ UI, ghép chuỗi và gọi Factory tương ứng
   void generateQr({
     String? billNumber,
     String? storeId,
@@ -119,13 +146,11 @@ class CustomQrCubit extends Cubit<CustomQrState> {
 
     final model = currentState.inputModel;
 
-    // Validate cơ bản
     if (model.selectedBank == null || model.accountNumber.isEmpty) {
       return;
     }
 
-    // A. GHÉP CHUỖI DESCRIPTION (Chiến lược Small Business)
-    // Format ví dụ: "BILL:123 STORE:ABC TER:XYZ NOTE:noidung"
+    // Ghép chuỗi Description
     final List<String> parts = [];
     if (billNumber != null && billNumber.trim().isNotEmpty) {
       parts.add("BILL:${billNumber.trim()}");
@@ -142,15 +167,14 @@ class CustomQrCubit extends Cubit<CustomQrState> {
 
     final String finalDescription = parts.join(' ');
 
-    // Lưu lại description đã ghép vào model
+    // Lưu description vào model (để nếu user xoay màn hình không bị mất)
+    // Chú ý: copyWith ở đây vẫn giữ nguyên các màu sắc đã chọn
     final updatedModel = model.copyWith(description: finalDescription);
 
     try {
       EmvData emvData;
 
-      // B. SWITCH CASE: PERSONAL vs BUSINESS
       if (model.type == QrType.personal) {
-        // --- CASE 1: PERSONAL ---
         emvData = VietQrFactory.createPersonal(
           bankBin: model.selectedBank!.bin,
           accountNumber: model.accountNumber,
@@ -161,7 +185,6 @@ class CustomQrCubit extends Cubit<CustomQrState> {
               : 'KHACH HANG',
         );
       } else {
-        // --- CASE 2: BUSINESS ---
         emvData = VietQrFactory.createBusiness(
           bankBin: model.selectedBank!.bin,
           accountNumber: model.accountNumber,
@@ -169,12 +192,8 @@ class CustomQrCubit extends Cubit<CustomQrState> {
               ? model.merchantName
               : 'BUSINESS',
           merchantCity: model.merchantCity,
-          mcc: model.mcc, // Mặc định 5999 hoặc user nhập
+          mcc: model.mcc,
           amount: model.amount > 0 ? model.amount.toInt().toString() : null,
-
-          // Ở đây ta đưa chuỗi đã ghép vào description (Field 62, ID 08)
-          // Các trường billNumber, storeId, terminalId để null để đảm bảo
-          // ngân hàng hiển thị nội dung description (theo docs của bạn).
           description: finalDescription.isNotEmpty ? finalDescription : null,
           billNumber: null,
           storeId: null,
@@ -182,10 +201,8 @@ class CustomQrCubit extends Cubit<CustomQrState> {
         );
       }
 
-      // C. BUILD STRING PAYLOAD
       final qrString = EmvBuilder.build(emvData);
 
-      // Emit kết quả
       emit(
         currentState.copyWith(inputModel: updatedModel, qrPayload: qrString),
       );
@@ -194,7 +211,20 @@ class CustomQrCubit extends Cubit<CustomQrState> {
         print("Lỗi tạo QR: $e");
       }
       emit(CustomQrError("Không thể tạo mã QR: $e"));
-      // Sau đó có thể emit lại Loaded để user không bị kẹt ở màn hình lỗi
+    }
+  }
+
+  void updateShape({QrDataModuleShape? qrDataShape, QrEyeShape? qrEyeShape}) {
+    final currentState = state;
+    if (currentState is CustomQrLoaded) {
+      emit(
+        currentState.copyWith(
+          inputModel: currentState.inputModel.copyWith(
+            qrDataShape: qrDataShape ?? currentState.inputModel.qrDataShape,
+            qrEyeShape: qrEyeShape ?? currentState.inputModel.qrEyeShape,
+          ),
+        ),
+      );
     }
   }
 }

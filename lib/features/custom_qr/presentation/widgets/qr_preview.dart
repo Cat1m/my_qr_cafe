@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:gap/gap.dart';
 import 'package:my_qr_cafe/features/custom_qr/cubit/custom_qr_cubit.dart';
 import 'package:my_qr_cafe/features/custom_qr/cubit/custom_qr_state.dart';
-import 'package:gap/gap.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
 import '../../../../core/utils/image_helper.dart';
 
 class QrPreview extends StatefulWidget {
   final CustomQrLoaded state;
-
   const QrPreview({super.key, required this.state});
 
   @override
@@ -17,30 +15,40 @@ class QrPreview extends StatefulWidget {
 }
 
 class _QrPreviewState extends State<QrPreview> {
-  // Key dùng để chụp ảnh widget (RepaintBoundary)
-  final GlobalKey _qrKey = GlobalKey();
+  // Key 1: Chụp toàn bộ thẻ (Background + Text + QR)
+  final GlobalKey _fullCardKey = GlobalKey();
 
-  // Biến trạng thái loading cho nút bấm
+  // Key 2: Chỉ chụp riêng vùng QR (Nền trong suốt)
+  final GlobalKey _qrOnlyKey = GlobalKey();
+
   bool _isProcessing = false;
 
-  /// Xử lý sự kiện Lưu ảnh
+  // Biến Toggle: false = Full Card (Mặc định), true = Chỉ QR
+  bool _saveOnlyQr = false;
+
+  /// Xử lý lấy Key phù hợp dựa trên lựa chọn
+  GlobalKey get _currentKey => _saveOnlyQr ? _qrOnlyKey : _fullCardKey;
+
+  /// Xử lý lưu ảnh
   Future<void> _handleSave() async {
     setState(() => _isProcessing = true);
     try {
-      // Delay nhẹ để UI kịp render trạng thái loading trước khi chụp
       await Future.delayed(const Duration(milliseconds: 100));
+      // Chụp widget dựa trên key đang chọn
+      final bytes = await ImageHelper.captureWidget(_currentKey);
 
-      final bytes = await ImageHelper.captureWidget(_qrKey);
       if (bytes != null) {
-        // Tạo tên file unique theo thời gian
-        final fileName = "vietqr_${DateTime.now().millisecondsSinceEpoch}.png";
+        final prefix = _saveOnlyQr ? "vietqr_transparent_" : "vietqr_full_";
+        final fileName = "$prefix${DateTime.now().millisecondsSinceEpoch}.png";
 
         await ImageHelper.saveImage(bytes, fileName: fileName);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Đang tải ảnh xuống..."),
+            SnackBar(
+              content: Text(
+                _saveOnlyQr ? "Đã tải QR tách nền!" : "Đã tải ảnh đầy đủ!",
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -49,10 +57,7 @@ class _QrPreviewState extends State<QrPreview> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Lỗi lưu ảnh: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("Lỗi: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -60,20 +65,23 @@ class _QrPreviewState extends State<QrPreview> {
     }
   }
 
-  /// Xử lý sự kiện Copy ảnh
+  /// Xử lý copy ảnh
   Future<void> _handleCopy() async {
     setState(() => _isProcessing = true);
     try {
       await Future.delayed(const Duration(milliseconds: 100));
+      final bytes = await ImageHelper.captureWidget(_currentKey);
 
-      final bytes = await ImageHelper.captureWidget(_qrKey);
       if (bytes != null) {
         await ImageHelper.copyImage(bytes);
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Đã sao chép ảnh! Bạn có thể dán (Ctrl+V) ngay."),
+            SnackBar(
+              content: Text(
+                _saveOnlyQr
+                    ? "Đã copy QR (nền trong suốt)!"
+                    : "Đã copy ảnh đầy đủ!",
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -81,10 +89,9 @@ class _QrPreviewState extends State<QrPreview> {
       }
     } catch (e) {
       if (mounted) {
-        // Lưu ý: Copy chỉ hoạt động trên HTTPS hoặc Localhost
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Không thể copy. Hãy kiểm tra quyền hoặc HTTPS."),
+            content: Text("Không thể copy (cần HTTPS hoặc Localhost)."),
             backgroundColor: Colors.orange,
           ),
         );
@@ -96,23 +103,32 @@ class _QrPreviewState extends State<QrPreview> {
 
   @override
   Widget build(BuildContext context) {
+    final model = widget.state.inputModel;
     final qrData = widget.state.qrPayload;
-    final logoBytes = widget.state.inputModel.logoBytes;
+    final logoBytes = model.logoBytes;
+
+    final bgColor = model.bgColor;
+    final dataColor = model.dataColor;
+    final eyeColor = model.eyeColor;
+    final eyeShape = model.qrEyeShape;
+    final dataShape = model.qrDataShape;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 1. Khu vực QR Code (Được bọc RepaintBoundary để chụp)
+        // --- 1. VÙNG HIỂN THỊ (PREVIEW) ---
+        // RepaintBoundary 1: Bao bọc toàn bộ thẻ (Full Card)
         RepaintBoundary(
-          key: _qrKey,
+          key: _fullCardKey,
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white, // Bắt buộc màu trắng để ảnh chụp đẹp
+              color: bgColor,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.blue.withOpacity(0.1),
+                  // Flutter 3.27+ dùng withValues, bản cũ dùng withOpacity
+                  color: Colors.black.withValues(alpha: .1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -120,55 +136,91 @@ class _QrPreviewState extends State<QrPreview> {
             ),
             child: qrData == null
                 ? const SizedBox(
-                    height: 250,
-                    width: 250,
+                    height: 280,
+                    width: 280,
                     child: Center(
                       child: Text(
-                        "Nhập thông tin và bấm\n'TẠO MÃ QR'",
+                        "Nhập thông tin...",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
                       ),
                     ),
                   )
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Tiêu đề
                       const Text(
                         "Quét mã để thanh toán",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: Colors.black87,
                         ),
                       ),
-                      const Gap(8),
+                      const Gap(16),
 
-                      // QR Image từ thư viện qr_flutter
-                      QrImageView(
-                        data: qrData,
-                        version: QrVersions.auto,
-                        size: 280,
-                        backgroundColor: Colors.white,
-                        // Ảnh logo ở giữa (nếu có)
-                        embeddedImage: logoBytes != null
-                            ? MemoryImage(logoBytes)
-                            : null,
-                        embeddedImageStyle: const QrEmbeddedImageStyle(
-                          size: Size(50, 50),
+                      // --- QR STACK ---
+                      // RepaintBoundary 2: Chỉ bao bọc vùng QR (Transparent QR)
+                      RepaintBoundary(
+                        key: _qrOnlyKey,
+                        child: SizedBox(
+                          width: 280,
+                          height: 280,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              QrImageView(
+                                data: qrData,
+                                version: QrVersions.auto,
+                                size: 280,
+                                errorCorrectionLevel: QrErrorCorrectLevel.H,
+                                // Nền trong suốt để khi lưu mode 2 sẽ không có nền
+                                backgroundColor: Colors.transparent,
+                                gapless: false,
+
+                                eyeStyle: QrEyeStyle(
+                                  eyeShape: eyeShape,
+                                  color: eyeColor,
+                                ),
+                                dataModuleStyle: QrDataModuleStyle(
+                                  dataModuleShape: dataShape,
+                                  color: dataColor,
+                                ),
+                              ),
+
+                              // Logo Layer
+                              if (logoBytes != null) ...[
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        bgColor, // Vẫn cần màu nền này để che các chấm QR bên dưới logo
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.memory(
+                                    logoBytes,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    filterQuality: FilterQuality.high,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
                       ),
-                      const Gap(8),
 
-                      // Tên chủ TK hiển thị bên dưới
+                      // --- END QR STACK ---
+                      const Gap(16),
                       Text(
-                        widget.state.inputModel.merchantName.toUpperCase(),
+                        model.merchantName.toUpperCase(),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Colors.black,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -177,12 +229,46 @@ class _QrPreviewState extends State<QrPreview> {
 
         const Gap(24),
 
-        // 2. Khu vực Nút bấm (Chỉ hiện khi đã có QR)
+        // --- 2. SWITCH CHỌN CHẾ ĐỘ ---
         if (qrData != null)
+          Container(
+            width: 300, // Giới hạn chiều rộng cho đẹp
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _saveOnlyQr ? "Chỉ lưu QR (Trong suốt)" : "Lưu toàn bộ thẻ",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: _saveOnlyQr,
+                  onChanged: (val) {
+                    setState(() => _saveOnlyQr = val);
+                  },
+                  activeThumbColor: Colors.blue,
+                ),
+              ],
+            ),
+          ),
+
+        // --- 3. CÁC NÚT BẤM CHỨC NĂNG ---
+        if (qrData != null) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Nút Save
               ElevatedButton.icon(
                 onPressed: _isProcessing ? null : _handleSave,
                 icon: _isProcessing
@@ -195,7 +281,7 @@ class _QrPreviewState extends State<QrPreview> {
                         ),
                       )
                     : const Icon(Icons.download),
-                label: const Text("Tải ảnh về"),
+                label: Text(_saveOnlyQr ? "Tải QR" : "Tải ảnh"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
@@ -206,8 +292,6 @@ class _QrPreviewState extends State<QrPreview> {
                 ),
               ),
               const Gap(12),
-
-              // Nút Copy
               OutlinedButton.icon(
                 onPressed: _isProcessing ? null : _handleCopy,
                 icon: const Icon(Icons.copy),
@@ -221,19 +305,18 @@ class _QrPreviewState extends State<QrPreview> {
               ),
             ],
           ),
+        ],
 
         const Gap(24),
 
-        // 3. Nút Chọn/Đổi Logo
+        // Nút thêm Logo
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextButton.icon(
               onPressed: () => context.read<CustomQrCubit>().pickImage(),
               icon: const Icon(Icons.image),
-              label: Text(
-                logoBytes == null ? "Thêm Logo (Giữa QR)" : "Đổi Logo",
-              ),
+              label: Text(logoBytes == null ? "Thêm Logo" : "Đổi Logo"),
             ),
             if (logoBytes != null) ...[
               const Gap(8),
@@ -245,27 +328,6 @@ class _QrPreviewState extends State<QrPreview> {
             ],
           ],
         ),
-
-        // 4. Debug info (Ẩn trong ExpansionTile cho gọn)
-        if (qrData != null) ...[
-          const Gap(16),
-          ExpansionTile(
-            title: const Text(
-              "Xem nội dung chuỗi (Debug)",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            children: [
-              SelectableText(
-                qrData,
-                style: const TextStyle(
-                  fontFamily: 'Courier',
-                  fontSize: 10,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }

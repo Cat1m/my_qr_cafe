@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Để dùng tính năng Copy
+import 'package:flutter/services.dart'; // Để dùng tính năng Copy text
+import 'package:gap/gap.dart'; // Dùng Gap cho tiện giống project của bạn
 
 import 'package:emv_qr_builder/emv_qr_builder.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
+// [QUAN TRỌNG] Đảm bảo import đúng đường dẫn ImageHelper trong project của bạn
+import '../../../../core/utils/image_helper.dart';
 
 class MyQrPage extends StatefulWidget {
   const MyQrPage({super.key});
@@ -12,18 +16,23 @@ class MyQrPage extends StatefulWidget {
 }
 
 class _MyQrPageState extends State<MyQrPage> {
-  // --- CẤU HÌNH CỨNG (Thông tin của bạn) ---
+  // --- CẤU HÌNH CỨNG ---
   final String _bankBin = '970407'; // Techcombank
   final String _accountNumber = '19033804311013';
-  final String _accountName = 'KHACH HANG'; // Tên chủ tài khoản
+  final String _accountName = 'LE MINH CHIEN';
 
   // --- STATE QUẢN LÝ ---
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _contentController = TextEditingController(
-    text: 'Cafe',
+    text: 'XIN CAM ON',
   );
 
   String _qrData = '';
+
+  // [MỚI] Key để chụp ảnh QR
+  final GlobalKey _qrKey = GlobalKey();
+  // [MỚI] Trạng thái loading khi đang lưu/copy
+  bool _isProcessing = false;
 
   // Màu chủ đạo (Coffee theme)
   final Color _primaryColor = const Color(0xFF6D4C41); // Brown 600
@@ -43,7 +52,6 @@ class _MyQrPageState extends State<MyQrPage> {
   }
 
   void _generateQr() {
-    // Xử lý số tiền: xóa ký tự không phải số
     String amountRaw = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     final emvData = VietQrFactory.createPersonal(
@@ -59,13 +67,11 @@ class _MyQrPageState extends State<MyQrPage> {
     });
   }
 
-  // Helper chọn nhanh số tiền
   void _setAmount(String value) {
     _amountController.text = value;
     _generateQr();
   }
 
-  // Helper copy số tài khoản
   void _copyToClipboard() {
     Clipboard.setData(ClipboardData(text: _accountNumber));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +84,63 @@ class _MyQrPageState extends State<MyQrPage> {
     );
   }
 
+  // --- [MỚI] XỬ LÝ LƯU ẢNH ---
+  Future<void> _handleSave() async {
+    setState(() => _isProcessing = true);
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final bytes = await ImageHelper.captureWidget(_qrKey);
+      if (bytes != null) {
+        final fileName =
+            "my_coffee_qr_${DateTime.now().millisecondsSinceEpoch}.png";
+        await ImageHelper.saveImage(bytes, fileName: fileName);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Đã tải ảnh về máy!"),
+              backgroundColor: _primaryColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Err: $e");
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
+  // --- [MỚI] XỬ LÝ COPY ẢNH ---
+  Future<void> _handleCopy() async {
+    setState(() => _isProcessing = true);
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+      final bytes = await ImageHelper.captureWidget(_qrKey);
+      if (bytes != null) {
+        await ImageHelper.copyImage(bytes);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("Đã copy ảnh QR!"),
+              backgroundColor: _primaryColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Lỗi copy (Cần HTTPS/Localhost)"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isProcessing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,12 +149,9 @@ class _MyQrPageState extends State<MyQrPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 400,
-            ), // Giới hạn chiều rộng cho Web
+            constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
-              elevation: 0, // Bỏ shadow mặc định đậm đà
-              // Tạo shadow thủ công mềm mại hơn
+              elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(color: Colors.grey.shade200),
@@ -117,7 +177,7 @@ class _MyQrPageState extends State<MyQrPage> {
                     ),
                     const SizedBox(height: 8),
 
-                    // --- BANK INFO (Minimal Row) ---
+                    // --- BANK INFO ---
                     InkWell(
                       onTap: _copyToClipboard,
                       borderRadius: BorderRadius.circular(8),
@@ -150,41 +210,83 @@ class _MyQrPageState extends State<MyQrPage> {
 
                     const SizedBox(height: 32),
 
-                    // --- QR CODE AREA ---
-                    // Sử dụng Stack để trang trí nhẹ hoặc bo góc QR
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _primaryColor.withValues(alpha: .08),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: QrImageView(
-                        data: _qrData,
-                        version: QrVersions.auto,
-                        size: 200.0,
-                        backgroundColor: Colors.white,
-                        // Custom mắt QR cho đẹp (Optional)
-                        eyeStyle: QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: _primaryColor,
+                    // --- QR CODE AREA [MỚI: Bọc RepaintBoundary] ---
+                    RepaintBoundary(
+                      key: _qrKey,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              // ignore: deprecated_member_use
+                              color: _primaryColor.withOpacity(
+                                0.08,
+                              ), // Fix cho bản cũ/mới
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                        dataModuleStyle: QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.circle,
-                          color: Colors.grey[800],
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            QrImageView(
+                              data: _qrData,
+                              version: QrVersions.auto,
+                              size: 200.0,
+                              backgroundColor: Colors.white,
+                              errorCorrectionLevel: QrErrorCorrectLevel.H,
+                              gapless: false,
+                              eyeStyle: QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: _primaryColor,
+                              ),
+                              dataModuleStyle: QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.circle,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            const Gap(8),
+                            // Thêm tên chủ TK vào ảnh QR luôn để người ck yên tâm
+                            Text(
+                              _accountName,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
 
-                    // --- INPUT SỐ TIỀN (Big & Clean) ---
+                    // --- [MỚI] BUTTONS LƯU/COPY ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildActionButton(
+                          icon: Icons.download_rounded,
+                          label: "Lưu",
+                          onTap: _isProcessing ? null : _handleSave,
+                        ),
+                        const SizedBox(width: 16),
+                        _buildActionButton(
+                          icon: Icons.copy_rounded,
+                          label: "Copy",
+                          onTap: _isProcessing ? null : _handleCopy,
+                          isOutlined: true,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // --- INPUT SỐ TIỀN ---
                     _buildMinimalInput(
                       controller: _amountController,
                       label: "Số tiền",
@@ -240,7 +342,53 @@ class _MyQrPageState extends State<MyQrPage> {
     );
   }
 
-  // Widget con: Input theo style tối giản
+  // [MỚI] Helper Button nhỏ gọn phù hợp style Coffee
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+    bool isOutlined = false,
+  }) {
+    final color = _primaryColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          // ignore: deprecated_member_use
+          color: isOutlined ? Colors.transparent : color.withOpacity(0.1),
+          border: Border.all(
+            color: isOutlined ? Colors.grey.shade300 : Colors.transparent,
+          ),
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isProcessing)
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: color),
+              )
+            else
+              Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMinimalInput({
     required TextEditingController controller,
     required String label,
@@ -250,7 +398,7 @@ class _MyQrPageState extends State<MyQrPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50], // Nền xám rất nhạt
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -264,7 +412,7 @@ class _MyQrPageState extends State<MyQrPage> {
           color: _primaryColor,
         ),
         decoration: InputDecoration(
-          border: InputBorder.none, // Bỏ viền
+          border: InputBorder.none,
           icon: Icon(icon, color: Colors.grey[400], size: 20),
           hintText: label,
           hintStyle: TextStyle(
@@ -279,7 +427,6 @@ class _MyQrPageState extends State<MyQrPage> {
     );
   }
 
-  // Widget con: Chip chọn tiền nhanh
   Widget _buildQuickAmountChip(String label) {
     final valueRaw = label.replaceAll(',', '');
     final isSelected = _amountController.text == valueRaw;
